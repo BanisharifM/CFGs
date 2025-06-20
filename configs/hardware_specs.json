@@ -1,0 +1,35 @@
+{
+    "default": {
+        "cores": 8,
+        "arch": "x86_64",
+        "memory": "16GB",
+        "cache_l1": "32KB",
+        "cache_l2": "256KB",
+        "cache_l3": "8MB"
+    },
+    "high_performance": {
+        "cores": 32,
+        "arch": "x86_64",
+        "memory": "64GB",
+        "cache_l1": "32KB",
+        "cache_l2": "512KB",
+        "cache_l3": "32MB"
+    },
+    "embedded": {
+        "cores": 4,
+        "arch": "arm64",
+        "memory": "4GB",
+        "cache_l1": "16KB",
+        "cache_l2": "128KB",
+        "cache_l3": "1MB"
+    },
+    "workstation": {
+        "cores": 16,
+        "arch": "x86_64",
+        "memory": "32GB",
+        "cache_l1": "32KB",
+        "cache_l2": "512KB",
+        "cache_l3": "16MB"
+    }
+}
+
