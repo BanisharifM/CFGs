@@ -1,0 +1,60 @@
+
+digraph "SparseLU_CFG" {
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    // Entry point
+    BB_entry [label="Entry\nSparseLU Function", fillcolor=lightgray];
+    
+    // Initialization
+    BB_init [label="BB_1\nInitialization\nMessage output", fillcolor=white];
+    
+    // Parallel region start
+    BB_parallel_start [label="BB_2\n#pragma omp parallel\nThread team creation", fillcolor=lightblue];
+    
+    // Main k-loop
+    BB_k_loop [label="BB_3\nfor (kk=0; kk<size; kk++)", fillcolor=white];
+    
+    // Single region for LU0
+    BB_single_lu0 [label="BB_4\n#pragma omp single\nlu0() call", fillcolor=lightgreen];
+    
+    // First parallel for (fwd tasks)
+    BB_for1_start [label="BB_5\n#pragma omp for nowait\nj-loop start", fillcolor=yellow];
+    BB_fwd_task [label="BB_6\n#pragma omp task untied\nfwd() task creation", fillcolor=red];
+    
+    // Second parallel for (bdiv tasks)  
+    BB_for2_start [label="BB_7\n#pragma omp for\ni-loop start", fillcolor=yellow];
+    BB_bdiv_task [label="BB_8\n#pragma omp task untied\nbdiv() task creation", fillcolor=red];
+    
+    // Third parallel for (bmod tasks)
+    BB_for3_start [label="BB_9\n#pragma omp for private(jj)\ni-loop for bmod", fillcolor=yellow];
+    BB_bmod_inner [label="BB_10\nInner j-loop\nNULL check", fillcolor=white];
+    BB_bmod_task [label="BB_11\n#pragma omp task untied\nbmod() task creation", fillcolor=red];
+    
+    // Loop continuation and exit
+    BB_k_continue [label="BB_12\nk-loop continue\nImplicit barrier", fillcolor=lightgreen];
+    BB_parallel_end [label="BB_13\nParallel region end\nThread team join", fillcolor=lightblue];
+    BB_exit [label="Exit\nFunction return", fillcolor=lightgray];
+    
+    // Control flow edges
+    BB_entry -> BB_init;
+    BB_init -> BB_parallel_start;
+    BB_parallel_start -> BB_k_loop;
+    BB_k_loop -> BB_single_lu0;
+    BB_single_lu0 -> BB_for1_start;
+    BB_for1_start -> BB_fwd_task;
+    BB_fwd_task -> BB_for2_start;
+    BB_for2_start -> BB_bdiv_task;
+    BB_bdiv_task -> BB_for3_start;
+    BB_for3_start -> BB_bmod_inner;
+    BB_bmod_inner -> BB_bmod_task;
+    BB_bmod_task -> BB_k_continue;
+    BB_k_continue -> BB_k_loop [label="k++"];
+    BB_k_loop -> BB_parallel_end [label="k >= size"];
+    BB_parallel_end -> BB_exit;
+    
+    // Task execution flows (simplified)
+    BB_fwd_task -> BB_fwd_task [label="task instances", style=dashed, color=red];
+    BB_bdiv_task -> BB_bdiv_task [label="task instances", style=dashed, color=red];
+    BB_bmod_task -> BB_bmod_task [label="task instances", style=dashed, color=red];
+}
