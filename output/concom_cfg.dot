@@ -1,0 +1,12 @@
+
+digraph "Basic_CFG" {
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    BB_entry [label="Entry\nFunction Start", fillcolor=lightgray];
+    BB_sequential [label="BB_1\nSequential code\nComputation", fillcolor=white];
+    BB_exit [label="Exit\nFunction return", fillcolor=lightgray];
+    
+    BB_entry -> BB_sequential;
+    BB_sequential -> BB_exit;
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LLM-Based CFG Generator for OpenMP Code - HPC Version
+LLM-Based CFG Generator for OpenMP Code - HPC Version with Fixed PNG Generation
 Optimized for HPC environments without sudo access
 """
 
@@ -300,33 +300,136 @@ digraph "Basic_CFG" {
         return validation_results
     
     def save_cfg(self, dot_graph: str, output_path: str, benchmark_name: str):
-        """Save the generated CFG to files"""
+        """Save the generated CFG to files - HPC Optimized Version"""
         os.makedirs(output_path, exist_ok=True)
         
-        # Save DOT file
+        # Save DOT file (always works)
         dot_file = os.path.join(output_path, f"{benchmark_name}_cfg.dot")
         with open(dot_file, 'w') as f:
             f.write(dot_graph)
+        print(f"✅ DOT file saved: {dot_file}")
         
-        # Try to generate PNG using Python graphviz package (HPC-friendly)
-        try:
-            import graphviz
-            source = graphviz.Source(dot_graph)
-            png_file = os.path.join(output_path, f"{benchmark_name}_cfg")
-            source.render(png_file, format='png', cleanup=True)
-            print(f"✅ Visual CFG saved: {png_file}.png")
-        except ImportError:
-            print("ℹ️  Python graphviz package not available - PNG generation skipped")
-        except Exception as e:
-            # Fallback: try system dot command
+        # Try multiple methods for PNG generation
+        png_generated = False
+        png_file = os.path.join(output_path, f"{benchmark_name}_cfg.png")
+        
+        # Method 1: Try Python graphviz package
+        if not png_generated:
+            try:
+                import graphviz
+                source = graphviz.Source(dot_graph)
+                png_base = os.path.join(output_path, f"{benchmark_name}_cfg")
+                source.render(png_base, format='png', cleanup=True)
+                print(f"✅ PNG generated using Python graphviz: {png_base}.png")
+                png_generated = True
+            except ImportError:
+                print("ℹ️  Python graphviz package not available")
+            except Exception as e:
+                print(f"ℹ️  Python graphviz failed: {e}")
+        
+        # Method 2: Try system dot command
+        if not png_generated:
             try:
                 import subprocess
-                png_file = os.path.join(output_path, f"{benchmark_name}_cfg.png")
                 result = subprocess.run(['dot', '-Tpng', dot_file, '-o', png_file], 
-                                      capture_output=True, text=True, check=True)
-                print(f"✅ Visual CFG saved: {png_file}")
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                print("ℹ️  PNG generation not available - DOT file created successfully")
+                                      capture_output=True, text=True, check=True, timeout=30)
+                print(f"✅ PNG generated using system dot: {png_file}")
+                png_generated = True
+            except subprocess.TimeoutExpired:
+                print("ℹ️  System dot command timed out")
+            except subprocess.CalledProcessError as e:
+                print(f"ℹ️  System dot command failed: {e.stderr}")
+            except FileNotFoundError:
+                print("ℹ️  System dot command not found")
+            except Exception as e:
+                print(f"ℹ️  System dot failed: {e}")
+        
+        # Method 3: Try alternative PNG generation using matplotlib
+        if not png_generated:
+            try:
+                import matplotlib.pyplot as plt
+                import matplotlib.patches as patches
+                from matplotlib.patches import FancyBboxPatch
+                import re
+                
+                # Simple visualization using matplotlib
+                fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+                ax.set_xlim(0, 10)
+                ax.set_ylim(0, 10)
+                ax.set_aspect('equal')
+                
+                # Extract nodes from DOT graph
+                node_pattern = r'(\w+)\s*\[label="([^"]+)"[^\]]*fillcolor=(\w+)[^\]]*\]'
+                nodes = re.findall(node_pattern, dot_graph)
+                
+                # Color mapping
+                color_map = {
+                    'lightgray': '#D3D3D3',
+                    'lightblue': '#ADD8E6', 
+                    'red': '#FF6B6B',
+                    'yellow': '#FFD93D',
+                    'lightgreen': '#90EE90',
+                    'white': '#FFFFFF'
+                }
+                
+                # Draw nodes
+                y_pos = 9
+                for i, (node_id, label, color) in enumerate(nodes[:10]):  # Limit to 10 nodes
+                    clean_label = label.replace('\\n', '\n')
+                    box_color = color_map.get(color, '#FFFFFF')
+                    
+                    # Create fancy box
+                    box = FancyBboxPatch((1, y_pos-0.4), 8, 0.8, 
+                                       boxstyle="round,pad=0.1",
+                                       facecolor=box_color, 
+                                       edgecolor='black',
+                                       linewidth=1)
+                    ax.add_patch(box)
+                    
+                    # Add text
+                    ax.text(5, y_pos, clean_label, ha='center', va='center', 
+                           fontsize=8, weight='bold')
+                    
+                    y_pos -= 1
+                
+                ax.set_title(f'{benchmark_name.upper()} Control Flow Graph', 
+                           fontsize=14, weight='bold')
+                ax.axis('off')
+                
+                plt.tight_layout()
+                plt.savefig(png_file, dpi=150, bbox_inches='tight')
+                plt.close()
+                
+                print(f"✅ PNG generated using matplotlib: {png_file}")
+                png_generated = True
+                
+            except Exception as e:
+                print(f"ℹ️  Matplotlib PNG generation failed: {e}")
+        
+        # Method 4: Create a simple text-based visualization
+        if not png_generated:
+            try:
+                txt_file = os.path.join(output_path, f"{benchmark_name}_cfg.txt")
+                with open(txt_file, 'w') as f:
+                    f.write(f"Control Flow Graph for {benchmark_name}\n")
+                    f.write("=" * 50 + "\n\n")
+                    f.write("DOT Graph Content:\n")
+                    f.write("-" * 20 + "\n")
+                    f.write(dot_graph)
+                    f.write("\n\n")
+                    f.write("Note: This is a text representation.\n")
+                    f.write("For visual PNG, install graphviz: pip install graphviz\n")
+                    f.write("Or use online converter: https://dreampuf.github.io/GraphvizOnline/\n")
+                
+                print(f"✅ Text visualization saved: {txt_file}")
+                
+            except Exception as e:
+                print(f"ℹ️  Text visualization failed: {e}")
+        
+        if not png_generated:
+            print("ℹ️  PNG generation not available - DOT file contains complete CFG")
+            print("ℹ️  You can convert DOT to PNG later using online tools or local graphviz")
+            print(f"ℹ️  Online converter: https://dreampuf.github.io/GraphvizOnline/")
         
         return dot_file
 
@@ -410,4 +513,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
